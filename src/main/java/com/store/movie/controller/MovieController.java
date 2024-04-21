@@ -1,6 +1,7 @@
 package com.store.movie.controller;
 
 import com.store.movie.service.AthenaService;
+import com.store.movie.service.DynamoService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -8,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,9 +23,11 @@ import java.util.stream.Stream;
 public class MovieController {
 
     private final AthenaService athenaService;
+    private final DynamoService dynamoService;
 
-    public MovieController(final AthenaService athenaService) {
+    public MovieController(final AthenaService athenaService, final DynamoService dynamoService) {
         this.athenaService = athenaService;
+        this.dynamoService = dynamoService;
     }
 
     @Parameters({
@@ -48,27 +52,35 @@ public class MovieController {
             return ResponseEntity.badRequest().body("Input parameters are incorrect.");
         }
 
-        if(StringUtils.hasLength(year)) {
-            athenaService.findByYear(Integer.valueOf(year));
-            return ResponseEntity.ok("findByYear");
-        }
+        StopWatch stopWatch = new StopWatch("DynamoDB");
 
-        if(StringUtils.hasLength(name)) {
-            athenaService.findByName(name);
-            return ResponseEntity.ok("findByName");
-        }
+        stopWatch.start("Query");
+        dynamoService.me();
+        stopWatch.stop();
 
-        if(StringUtils.hasLength(cast)) {
-            athenaService.findByCast(cast);
-            return ResponseEntity.ok("findByCast");
-        }
+        log.info("StopWatch: {}", stopWatch);
 
-        if(StringUtils.hasLength(genre)) {
-            athenaService.findByGenre(genre);
-            return ResponseEntity.ok("findByGenre");
-        }
+//        if(StringUtils.hasLength(year)) {
+//            athenaService.findByYear(Integer.valueOf(year));
+//            return ResponseEntity.ok("findByYear");
+//        }
+//
+//        if(StringUtils.hasLength(name)) {
+//            athenaService.findByName(name);
+//            return ResponseEntity.ok("findByName");
+//        }
+//
+//        if(StringUtils.hasLength(cast)) {
+//            athenaService.findByCast(cast);
+//            return ResponseEntity.ok("findByCast");
+//        }
+//
+//        if(StringUtils.hasLength(genre)) {
+//            athenaService.findByGenre(genre);
+//            return ResponseEntity.ok("findByGenre");
+//        }
 
-        return ResponseEntity.internalServerError().body("Something went wrong");
+        return ResponseEntity.ok("Done");
     }
 
     private boolean validate(String year, String name, String cast, String genre) {
