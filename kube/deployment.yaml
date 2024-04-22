@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movie-store-deployment
+  namespace: movie-store
+  labels:
+    app: movie-store
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: movie-store
+  template:
+    metadata:
+      labels:
+        app: movie-store
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+                      - arm64
+      containers:
+        - name: movie-store
+          image: ${aws_account_number}.dkr.ecr.us-east-1.amazonaws.com/movie-store-repository:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          imagePullPolicy: Always
+      nodeSelector:
+        kubernetes.io/os: linux
