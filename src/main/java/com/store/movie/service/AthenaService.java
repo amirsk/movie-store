@@ -1,5 +1,6 @@
 package com.store.movie.service;
 
+import com.store.movie.controller.schema.MovieDetail;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
@@ -8,6 +9,7 @@ import software.amazon.awssdk.services.athena.AthenaClient;
 import software.amazon.awssdk.services.athena.model.*;
 import software.amazon.awssdk.services.athena.paginators.GetQueryResultsIterable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -18,37 +20,37 @@ public class AthenaService {
     String table = "movie";
     String outputLocation = "s3://athena-output-demo/";
 
-    public void findByYear(Integer search) throws InterruptedException {
-        String findByYear = "SELECT * FROM movie WHERE year = " + search;
-         query(findByYear);
-    }
-
-    public void findByName(String search) throws InterruptedException {
+    public List<MovieDetail> findByTitle(String search) throws InterruptedException {
         String findByName = "SELECT * FROM movie WHERE title LIKE '%" + search + "%'";
-         query(findByName);
+        return query(findByName);
     }
 
-    public void findByCast(String search) throws InterruptedException {
+    public List<MovieDetail> findByYear(Integer search) throws InterruptedException {
+        String findByYear = "SELECT * FROM movie WHERE year = " + search;
+        return query(findByYear);
+    }
+
+    public List<MovieDetail> findByCast(String search) throws InterruptedException {
         String columnName = "\"cast\"";
 
         String findByCast = "SELECT * FROM " + database + "." + table +
                 " CROSS JOIN UNNEST(" + columnName + ") AS t(cast_item)" +
                 " WHERE cast_item LIKE '%" + search + "%'";
 
-        query(findByCast);
+        return query(findByCast);
     }
 
-    public void findByGenre(String search) throws InterruptedException {
+    public List<MovieDetail> findByGenre(String search) throws InterruptedException {
         String columnName = "genres";
 
         String findByGenre = "SELECT * FROM " + database + "." + table +
                 " CROSS JOIN UNNEST(" + columnName + ") AS t(cast_item)" +
                 " WHERE cast_item LIKE '%" + search + "%'";
 
-        query(findByGenre);
+        return query(findByGenre);
     }
 
-    private void query(String query) throws InterruptedException {
+    private List<MovieDetail> query(String query) throws InterruptedException {
         AthenaClient client = AthenaClient.builder()
                 .region(Region.US_EAST_1)
                 .build();
@@ -64,12 +66,14 @@ public class AthenaService {
         stopWatch.stop();
 
         stopWatch.start("processResultRows");
-        processResultRows(client, queryExecutionId);
+        List<MovieDetail> movieDetails = processResultRows(client, queryExecutionId);
         stopWatch.stop();
 
-        log.info("Operation finished. StopWatch: {}", stopWatch);
+        log.info("Operation finished. Found: {} - StopWatch: {}", movieDetails.size(), stopWatch);
 
         client.close();
+
+        return movieDetails;
     }
 
     // // Submits a sample query to Amazon Athena and returns the execution ID of the query.
@@ -122,9 +126,6 @@ public class AthenaService {
                 throw new RuntimeException("The Amazon Athena query was cancelled.");
             } else if(queryState.equals(QueryExecutionState.SUCCEEDED.toString())) {
                 isQueryStillRunning = false;
-            } else {
-                // Sleep an amount of time before retrying again.
-                Thread.sleep(1000);
             }
 
             log.info("The current status is: " + queryState);
@@ -132,7 +133,7 @@ public class AthenaService {
     }
 
     // This code retrieves the results of a query.
-    private void processResultRows(AthenaClient client, String queryExecutionId) {
+    private List<MovieDetail> processResultRows(AthenaClient client, String queryExecutionId) {
         try {
             // Max Results can be set but if its not set, it will choose the maximum page size.
             GetQueryResultsRequest request = GetQueryResultsRequest.builder()
@@ -141,22 +142,29 @@ public class AthenaService {
 
             GetQueryResultsIterable iterableResults = client.getQueryResultsPaginator(request);
 
+            List<MovieDetail> movieDetails = new ArrayList<>();
+
             for(GetQueryResultsResponse result: iterableResults) {
-                List<ColumnInfo> columnInfoList = result.resultSet().resultSetMetadata().columnInfo();
                 List<Row> results = result.resultSet().rows();
-                processRow(results, columnInfoList);
+                processRow(movieDetails, results);
             }
+
+            return movieDetails;
         } catch (AthenaException ex) {
             log.error("!!! Exception !!!", ex);
+            return null;
         }
     }
 
-    private void processRow(List<Row> results, List<ColumnInfo> columnInfoList) {
-        for(Row row:results) {
-            List<Datum> allData = row.data();
-            for (Datum data : allData) {
-                log.info("The value of the column is " + data.varCharValue());
-            }
-        }
+    private void processRow(List<MovieDetail> movieDetails, List<Row> results) {
+        results.stream().skip(1).forEach(row -> {
+            MovieDetail movieDetail = new MovieDetail();
+            List<Datum> datum = row.data();
+            movieDetail.setTitle(datum.get(0).varCharValue());
+            movieDetail.setYear(datum.get(1).varCharValue());
+            movieDetail.setCast(datum.get(2).varCharValue());
+            movieDetail.setGenre(datum.get(3).varCharValue());
+            movieDetails.add(movieDetail);
+        });
     }
 }
