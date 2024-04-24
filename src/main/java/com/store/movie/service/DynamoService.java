@@ -5,8 +5,9 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.*;
-import software.amazon.awssdk.utils.ImmutableMap;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,15 +20,13 @@ public class DynamoService {
     private final String tableName = "movie";
 
     public List<MovieDetail> findByTitle(String searchQuery) {
-        List<MovieDetail> movies = new ArrayList<>();
-
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
-        stopWatch.start("Scan Cast");
+        stopWatch.start("Scan");
 
         DynamoDbClient client = DynamoDbClient.create();
 
-        ScanResponse response = client.scan(
+        ScanResponse scanResponse = client.scan(
                 ScanRequest.builder()
                         .tableName(tableName)
                         .filterExpression("contains(#title, :query)")
@@ -36,20 +35,22 @@ public class DynamoService {
                         .build()
         );
 
+        List<Map<String, AttributeValue>> items = scanResponse.items();
+
         stopWatch.stop();
 
-        List<Map<String, AttributeValue>> items = response.items();
+        stopWatch.start("Convert");
 
-        convert(movies, items);
+        List<MovieDetail> movies = convert(items);
 
-        log.info("Found {}. StopWatch: {}", movies.size(), stopWatch);
+        stopWatch.stop();
+
+        log.info("Found: {} - Converted: {} - StopWatch: {}", items.size(), movies.size(), stopWatch);
 
         return movies;
     }
 
     public List<MovieDetail> findByYear(String searchQuery) {
-        List<MovieDetail> movies = new ArrayList<>();
-
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
         stopWatch.start("Scan Cast");
@@ -65,20 +66,22 @@ public class DynamoService {
                         .build()
         );
 
-        stopWatch.stop();
-
         List<Map<String, AttributeValue>> items = scanResponse.items();
 
-        convert(movies, items);
+        stopWatch.stop();
 
-        log.info("Found {}. StopWatch: {}", movies.size(), stopWatch);
+        stopWatch.start("Convert");
+
+        List<MovieDetail> movies = convert(items);
+
+        stopWatch.stop();
+
+        log.info("Found: {} - Converted: {} - StopWatch: {}", items.size(), movies.size(), stopWatch);
 
         return movies;
     }
 
     public List<MovieDetail> findByCast(String searchQuery) {
-        List<MovieDetail> movies = new ArrayList<>();
-
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
         stopWatch.start("Scan Cast");
@@ -94,20 +97,22 @@ public class DynamoService {
                         .build()
         );
 
-        stopWatch.stop();
-
         List<Map<String, AttributeValue>> items = scanResponse.items();
 
-        convert(movies, items);
+        stopWatch.stop();
 
-        log.info("Found {}. StopWatch: {}", movies.size(), stopWatch);
+        stopWatch.start("Convert");
+
+        List<MovieDetail> movies = convert(items);
+
+        stopWatch.stop();
+
+        log.info("Found: {} - Converted: {} - StopWatch: {}", items.size(), movies.size(), stopWatch);
 
         return movies;
     }
 
     public List<MovieDetail> findByGenre(String searchQuery) {
-        List<MovieDetail> movies = new ArrayList<>();
-
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
         stopWatch.start("Scan Cast");
@@ -123,27 +128,34 @@ public class DynamoService {
                         .build()
         );
 
-        stopWatch.stop();
-
         List<Map<String, AttributeValue>> items = scanResponse.items();
 
-        convert(movies, items);
+        stopWatch.stop();
 
-        log.info("Found {}. StopWatch: {}", movies.size(), stopWatch);
+        stopWatch.start("Convert");
+
+        List<MovieDetail> movies = convert(items);
+
+        stopWatch.stop();
+
+        log.info("Found: {} - Converted: {} - StopWatch: {}", items.size(), movies.size(), stopWatch);
 
         return movies;
     }
 
-    private static void convert(List<MovieDetail> movies, List<Map<String, AttributeValue>> items) {
+    private static List<MovieDetail> convert(List<Map<String, AttributeValue>> items) {
+        List<MovieDetail> movieDetails = new ArrayList<>();
+
         for (Map<String, AttributeValue> item : items) {
-            movies.add(
-                    MovieDetail.builder()
-                            .title(item.get("title") == null ? "" : item.get("title").s())
-                            .year(item.get("year") == null ? "" : item.get("year").s())
-                            .cast(item.get("cast") == null ? "" : item.get("cast").s())
-                            .genre(item.get("genres") == null ? "" : item.get("genres").s())
-                            .build());
+            MovieDetail movieDetail = new MovieDetail();
+            movieDetail.setTitle(item.get("title") == null ? "" : item.get("title").s());
+            movieDetail.setYear(item.get("year") == null ? "" : item.get("year").s());
+            movieDetail.setCast(item.get("cast") == null ? "" : item.get("cast").s());
+            movieDetail.setGenre(item.get("genres") == null ? "" : item.get("genres").s());
+            movieDetails.add(movieDetail);
         }
+
+        return movieDetails;
     }
 
 }
