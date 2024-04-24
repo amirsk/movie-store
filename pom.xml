@@ -54,11 +54,6 @@
 		<!-- AWS -->
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>athena</artifactId>
-			<version>2.25.34</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>dynamodb</artifactId>
 			<version>2.25.34</version>
 		</dependency>

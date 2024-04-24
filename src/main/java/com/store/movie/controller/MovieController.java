@@ -1,9 +1,7 @@
 package com.store.movie.controller;
 
 import com.store.movie.controller.schema.MovieDetail;
-import com.store.movie.service.AthenaService;
 import com.store.movie.service.DynamoService;
-import com.store.movie.service.RedisService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -32,13 +30,9 @@ import java.util.stream.Stream;
 @Log4j2
 public class MovieController {
 
-    private final AthenaService athenaService;
-    private final RedisService redisService;
     private final DynamoService dynamoService;
 
-    public MovieController(final AthenaService athenaService, final RedisService redisService, final DynamoService dynamoService) {
-        this.athenaService = athenaService;
-        this.redisService = redisService;
+    public MovieController(final DynamoService dynamoService) {
         this.dynamoService = dynamoService;
     }
 
@@ -74,48 +68,6 @@ public class MovieController {
         if(!isValid) {
             return ResponseEntity.badRequest().build();
         }
-
-//        if(StringUtils.hasLength(title)) {
-//            List<MovieDetail> movies = athenaService.findByTitle(title);
-//
-//            if(CollectionUtils.isEmpty(movies)) {
-//                return ResponseEntity.notFound().build();
-//            }
-//
-//            return ResponseEntity.ok(movies);
-//        }
-//
-//        if(StringUtils.hasLength(year)) {
-//            List<MovieDetail> movies = athenaService.findByYear(Integer.valueOf(year));
-//
-//            if(CollectionUtils.isEmpty(movies)) {
-//                return ResponseEntity.notFound().build();
-//            }
-//
-//            return ResponseEntity.ok(movies);
-//        }
-//
-//        if(StringUtils.hasLength(cast)) {
-//            List<MovieDetail> movies = athenaService.findByCast(cast);
-//
-//            if(CollectionUtils.isEmpty(movies)) {
-//                return ResponseEntity.notFound().build();
-//            }
-//
-//            return ResponseEntity.ok(movies);
-//        }
-//
-//        if(StringUtils.hasLength(genre)) {
-//            List<MovieDetail> movies = athenaService.findByGenre(genre);
-//
-//            if(CollectionUtils.isEmpty(movies)) {
-//                return ResponseEntity.notFound().build();
-//            }
-//
-//            return ResponseEntity.ok(movies);
-//        }
-
-//        redisService.me();
 
         if(StringUtils.hasLength(title)) {
             List<MovieDetail> movies = dynamoService.findByTitle(title);
