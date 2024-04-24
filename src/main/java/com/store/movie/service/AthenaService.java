@@ -158,13 +158,15 @@ public class AthenaService {
 
     private void processRow(List<MovieDetail> movieDetails, List<Row> results) {
         results.stream().skip(1).forEach(row -> {
-            MovieDetail movieDetail = new MovieDetail();
             List<Datum> datum = row.data();
-            movieDetail.setTitle(datum.get(0).varCharValue());
-            movieDetail.setYear(datum.get(1).varCharValue());
-            movieDetail.setCast(datum.get(2).varCharValue());
-            movieDetail.setGenre(datum.get(3).varCharValue());
-            movieDetails.add(movieDetail);
+            movieDetails.add(
+                    MovieDetail.builder()
+                            .title(datum.get(0).varCharValue())
+                            .year(datum.get(1).varCharValue())
+                            .cast(datum.get(2).varCharValue())
+                            .genre(datum.get(3).varCharValue())
+                            .build()
+            );
         });
     }
 }
