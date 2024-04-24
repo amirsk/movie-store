@@ -57,6 +57,11 @@
 			<artifactId>dynamodb</artifactId>
 			<version>2.25.34</version>
 		</dependency>
+		<dependency>
+			<groupId>software.amazon.dax</groupId>
+			<artifactId>amazon-dax-client</artifactId>
+			<version>2.0.4</version>
+		</dependency>
 		<!-- AWS -->
 
 		<dependency>

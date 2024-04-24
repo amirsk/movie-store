@@ -4,11 +4,15 @@ import com.store.movie.controller.schema.MovieDetail;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.dax.ClusterDaxClient;
+import software.amazon.dax.Configuration;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,13 +22,24 @@ import java.util.Map;
 public class DynamoService {
 
     private final String tableName = "movie";
+    private final String daxUrl = "PLACEHOLDER";
+    private final Region region = Region.US_EAST_1;
 
-    public List<MovieDetail> findByTitle(String searchQuery) {
+    private DynamoDbClient getClient() throws IOException {
+        return ClusterDaxClient.builder()
+                .overrideConfiguration(Configuration.builder()
+                        .url(daxUrl)
+                        .region(region)
+                        .build())
+                .build();
+    }
+
+    public List<MovieDetail> findByTitle(String searchQuery) throws IOException {
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
         stopWatch.start("Scan");
 
-        DynamoDbClient client = DynamoDbClient.create();
+        DynamoDbClient client = getClient();
 
         ScanResponse scanResponse = client.scan(
                 ScanRequest.builder()
@@ -50,12 +65,12 @@ public class DynamoService {
         return movies;
     }
 
-    public List<MovieDetail> findByYear(String searchQuery) {
+    public List<MovieDetail> findByYear(String searchQuery) throws IOException {
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
         stopWatch.start("Scan Cast");
 
-        DynamoDbClient client = DynamoDbClient.create();
+        DynamoDbClient client = getClient();
 
         ScanResponse scanResponse = client.scan(
                 ScanRequest.builder()
@@ -81,12 +96,12 @@ public class DynamoService {
         return movies;
     }
 
-    public List<MovieDetail> findByCast(String searchQuery) {
+    public List<MovieDetail> findByCast(String searchQuery) throws IOException {
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
         stopWatch.start("Scan Cast");
 
-        DynamoDbClient client = DynamoDbClient.create();
+        DynamoDbClient client = getClient();
 
         ScanResponse scanResponse = client.scan(
                 ScanRequest.builder()
@@ -112,12 +127,12 @@ public class DynamoService {
         return movies;
     }
 
-    public List<MovieDetail> findByGenre(String searchQuery) {
+    public List<MovieDetail> findByGenre(String searchQuery) throws IOException {
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
         stopWatch.start("Scan Cast");
 
-        DynamoDbClient client = DynamoDbClient.create();
+        DynamoDbClient client = getClient();
 
         ScanResponse scanResponse = client.scan(
                 ScanRequest.builder()
