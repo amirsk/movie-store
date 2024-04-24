@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -69,47 +70,23 @@ public class MovieController {
             return ResponseEntity.badRequest().build();
         }
 
+        List<MovieDetail> movies = new ArrayList<>();
+
         if(StringUtils.hasLength(title)) {
-            List<MovieDetail> movies = dynamoService.findByTitle(title);
-
-            if(CollectionUtils.isEmpty(movies)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            return ResponseEntity.ok(movies);
+            movies = dynamoService.findByTitle(title);
+        } else if(StringUtils.hasLength(year)) {
+            movies = dynamoService.findByYear(year);
+        } else if(StringUtils.hasLength(cast)) {
+            movies = dynamoService.findByCast(cast);
+        } else if(StringUtils.hasLength(genre)) {
+            movies = dynamoService.findByGenre(genre);
         }
 
-        if(StringUtils.hasLength(year)) {
-            List<MovieDetail> movies = dynamoService.findByYear(year);
-
-            if(CollectionUtils.isEmpty(movies)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            return ResponseEntity.ok(movies);
+        if(CollectionUtils.isEmpty(movies)) {
+            return ResponseEntity.notFound().build();
         }
 
-        if(StringUtils.hasLength(cast)) {
-            List<MovieDetail> movies = dynamoService.findByCast(cast);
-
-            if(CollectionUtils.isEmpty(movies)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            return ResponseEntity.ok(movies);
-        }
-
-        if(StringUtils.hasLength(genre)) {
-            List<MovieDetail> movies = dynamoService.findByGenre(genre);
-
-            if(CollectionUtils.isEmpty(movies)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            return ResponseEntity.ok(movies);
-        }
-
-        return ResponseEntity.internalServerError().build();
+        return ResponseEntity.ok(movies);
     }
 
     private boolean validate(String title, String year, String cast, String genre) {

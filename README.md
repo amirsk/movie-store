@@ -8,7 +8,9 @@
 - Docker and ECR
 - AWS EKS
 - AWS S3
+- AWS KMS
 - AWS DynamoDB
+- AWS DAX
 
 ## Run
 
