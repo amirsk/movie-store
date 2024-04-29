@@ -22,42 +22,18 @@ import java.util.Map;
 public class DynamoService {
 
     private final String tableName = "movie";
-    private final String daxUrl = "PLACEHOLDER";
+    private final String daxUrl = "daxs://movie-cluster.8whocy.dax-clusters.us-east-1.amazonaws.com";
     private final Region region = Region.US_EAST_1;
-
-    private DynamoDbClient getClient() throws IOException {
-        return ClusterDaxClient.builder()
-                .overrideConfiguration(Configuration.builder()
-                        .url(daxUrl)
-                        .region(region)
-                        .build())
-                .build();
-    }
 
     public List<MovieDetail> findByTitle(String searchQuery) throws IOException {
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
         stopWatch.start("Scan");
-
-        DynamoDbClient client = getClient();
-
-        ScanResponse scanResponse = client.scan(
-                ScanRequest.builder()
-                        .tableName(tableName)
-                        .filterExpression("contains(#title, :query)")
-                        .expressionAttributeNames(Map.of("#title", "title"))
-                        .expressionAttributeValues(Map.of(":query", AttributeValue.builder().s(searchQuery).build()))
-                        .build()
-        );
-
-        List<Map<String, AttributeValue>> items = scanResponse.items();
-
+        List<Map<String, AttributeValue>> items = scan("title", searchQuery);
         stopWatch.stop();
 
         stopWatch.start("Convert");
-
         List<MovieDetail> movies = convert(items);
-
         stopWatch.stop();
 
         log.info("Found: {} - Converted: {} - StopWatch: {}", items.size(), movies.size(), stopWatch);
@@ -68,27 +44,12 @@ public class DynamoService {
     public List<MovieDetail> findByYear(String searchQuery) throws IOException {
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
-        stopWatch.start("Scan Cast");
-
-        DynamoDbClient client = getClient();
-
-        ScanResponse scanResponse = client.scan(
-                ScanRequest.builder()
-                        .tableName(tableName)
-                        .filterExpression("contains(#year, :query)")
-                        .expressionAttributeNames(Map.of("#year", "year"))
-                        .expressionAttributeValues(Map.of(":query", AttributeValue.builder().s(searchQuery).build()))
-                        .build()
-        );
-
-        List<Map<String, AttributeValue>> items = scanResponse.items();
-
+        stopWatch.start("Scan");
+        List<Map<String, AttributeValue>> items = scan("year", searchQuery);
         stopWatch.stop();
 
         stopWatch.start("Convert");
-
         List<MovieDetail> movies = convert(items);
-
         stopWatch.stop();
 
         log.info("Found: {} - Converted: {} - StopWatch: {}", items.size(), movies.size(), stopWatch);
@@ -99,27 +60,12 @@ public class DynamoService {
     public List<MovieDetail> findByCast(String searchQuery) throws IOException {
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
-        stopWatch.start("Scan Cast");
-
-        DynamoDbClient client = getClient();
-
-        ScanResponse scanResponse = client.scan(
-                ScanRequest.builder()
-                        .tableName(tableName)
-                        .filterExpression("contains(#cast, :query)")
-                        .expressionAttributeNames(Map.of("#cast", "cast"))
-                        .expressionAttributeValues(Map.of(":query", AttributeValue.builder().s(searchQuery).build()))
-                        .build()
-        );
-
-        List<Map<String, AttributeValue>> items = scanResponse.items();
-
+        stopWatch.start("Scan");
+        List<Map<String, AttributeValue>> items = scan("cast", searchQuery);
         stopWatch.stop();
 
         stopWatch.start("Convert");
-
         List<MovieDetail> movies = convert(items);
-
         stopWatch.stop();
 
         log.info("Found: {} - Converted: {} - StopWatch: {}", items.size(), movies.size(), stopWatch);
@@ -130,32 +76,41 @@ public class DynamoService {
     public List<MovieDetail> findByGenre(String searchQuery) throws IOException {
         StopWatch stopWatch = new StopWatch("DynamoDB");
 
-        stopWatch.start("Scan Cast");
-
-        DynamoDbClient client = getClient();
-
-        ScanResponse scanResponse = client.scan(
-                ScanRequest.builder()
-                        .tableName(tableName)
-                        .filterExpression("contains(#genres, :query)")
-                        .expressionAttributeNames(Map.of("#genres", "genres"))
-                        .expressionAttributeValues(Map.of(":query", AttributeValue.builder().s(searchQuery).build()))
-                        .build()
-        );
-
-        List<Map<String, AttributeValue>> items = scanResponse.items();
-
+        stopWatch.start("Scan");
+        List<Map<String, AttributeValue>> items = scan("genres", searchQuery);
         stopWatch.stop();
 
         stopWatch.start("Convert");
-
         List<MovieDetail> movies = convert(items);
-
         stopWatch.stop();
 
         log.info("Found: {} - Converted: {} - StopWatch: {}", items.size(), movies.size(), stopWatch);
 
         return movies;
+    }
+
+    private List<Map<String, AttributeValue>> scan(String title, String searchQuery) throws IOException {
+        DynamoDbClient client = getClient();
+
+        ScanResponse scanResponse = client.scan(
+                ScanRequest.builder()
+                        .tableName(tableName)
+                        .filterExpression("contains(#column, :query)")
+                        .expressionAttributeNames(Map.of("#column", title))
+                        .expressionAttributeValues(Map.of(":query", AttributeValue.builder().s(searchQuery).build()))
+                        .build()
+        );
+
+        return scanResponse.items();
+    }
+
+    private DynamoDbClient getClient() throws IOException {
+        return ClusterDaxClient.builder()
+                .overrideConfiguration(Configuration.builder()
+                        .url(daxUrl)
+                        .region(region)
+                        .build())
+                .build();
     }
 
     private static List<MovieDetail> convert(List<Map<String, AttributeValue>> items) {
